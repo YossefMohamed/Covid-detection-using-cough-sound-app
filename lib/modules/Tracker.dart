@@ -1,37 +1,155 @@
+import 'dart:convert';
 import 'package:bubble_tab_indicator/bubble_tab_indicator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:covid/config/palette.dart';
 import 'package:covid/config/styles.dart';
-import 'package:covid/modules/grids.dart';
 import 'package:covid/modules/chart.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import '../models/Tcases.dart';
+import 'package:http/http.dart' as http;
+import 'package:number_display/number_display.dart';
 
-class StatsScreen extends StatefulWidget {
+class Tracker extends StatefulWidget {
   @override
-  _StatsScreenState createState() => _StatsScreenState();
+  _Tracker createState() => _Tracker();
 }
 
-class _StatsScreenState extends State<StatsScreen> {
+class _Tracker extends State<Tracker> {
 
+  /// keep track of whatever user selection
+  int flag = 0;
+
+  /// covid data
+  dynamic covid;
+
+  /// Chart data
   final covidData = [12.17, 11.15, 10.02, 11.21, 13.83, 14.16, 14.30];
+
+  /// max length to display 4
+   final display = createDisplay(length: 4);
+  /// ex: display(650000) = 650K
+
+  /// global API data
+  final String urlGlobal = "https://corona.lmao.ninja/v3/covid-19/all";
+
+  /// global API data
+   //final String url_country = "https://corona.lmao.ninja/v3/covid-19/countries/cuntry_name";
+
+  /// init connection
+  @override
+  void initState() {
+    super.initState();
+    this.getJsonData();
+  }
+
+  /// Json Response
+  Future <Tcases> getJsonData() async
+  {
+      var response = await http.get(
+      Uri.encodeFull(urlGlobal),
+    );
+
+    if (response.statusCode==200)
+    {
+      final convertDataJson = jsonDecode(response.body);
+
+      return Tcases.fromJson(convertDataJson);
+    }
+    else{
+      throw Exception('Check Connection and Try to Reload Page!');
+    }
+  }
+
 
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: Palette.primaryColor,
+
       body: CustomScrollView(
+
+        /// tab bar and header
         physics: ClampingScrollPhysics(),
+
         slivers: <Widget>[
           _buildHeader(),
           _buildRegionTabBar(),
           _buildStatsTabBar(),
-          const SliverPadding(
+
+            /// Api related work
+            SliverPadding(
             padding: EdgeInsets.symmetric(horizontal: 10.0),
             sliver: SliverToBoxAdapter(
-              child: StatsGrid(),
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.25,
+                child: Column(
+                  children: <Widget>[
+
+                    /// fetch Api data and pass it to ui
+                    FutureBuilder<Tcases>(
+
+                        future: getJsonData(),
+                        builder: (context, snapshot){
+
+                          if(snapshot.hasData)
+                          {
+                             covid = snapshot.data;
+
+                            return Column(
+                              children: [
+                                Row(
+                                    children :  <Widget>[
+                                                    Flexible(
+                                                      child: Row(
+                                                        children: <Widget>[
+                                                          _buildStatCard('Total Cases', flag==1 ? display(covid?.todayCases)
+                                                              : (flag==2 ? display(covid?.todayCases) : display(covid?.cases)), Colors.orange),
+                                                          _buildStatCard('Deaths', flag==1 ? display(covid?.todayDeaths)
+                                                              : (flag==2 ? display(covid?.todayDeaths) : display(covid?.deaths)), Colors.red),
+                                                        ],
+                                                      ),
+                                                    ),
+
+                                    ]),
+                                Row(
+                                    children :  <Widget>[
+                                      Flexible(
+                                        child: Row(
+                                          children: <Widget>[
+                                            _buildStatCard('Recovered',  flag==1 ? display(covid?.todayRecovered)
+                                                : (flag==2 ? display(covid?.todayRecovered) : display(covid?.recovered)), Colors.pink),
+                                            _buildStatCard('Active', display(covid?.active), Colors.lightBlue),
+                                            _buildStatCard('Critical', display(covid?.critical), Colors.purple),
+                                          ],
+                                        ),
+                                      ),
+
+                                    ]),
+                              ],
+                            );
+
+                          }
+                          else if(snapshot.hasError)
+                          {
+                            return const Text('Check Connection and Try to Reload Page!');
+                          }
+
+                          return const CircularProgressIndicator();
+
+                        }
+                    ),
+
+                  ],
+
+                ),
+              ),
             ),
           ),
+
+           /// graph work
            SliverPadding(
             padding: EdgeInsets.only(top: 20.0),
             sliver: SliverToBoxAdapter(
@@ -42,9 +160,47 @@ class _StatsScreenState extends State<StatsScreen> {
         ],
 
       ),
+
     );
   }
 
+  Expanded _buildStatCard(String title, String count, MaterialColor color) {
+    return Expanded(
+      child: Container(
+        margin:  EdgeInsets.all(5.0),
+        padding:  EdgeInsets.all(7.0),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(10.0),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              title,
+              style:  const TextStyle(
+                color: Colors.white,
+                fontSize: 15.0,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            Text(
+              count,
+              style:  const TextStyle(
+                color: Colors.white,
+                fontSize: 20.0,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+  /// header
   SliverPadding _buildHeader() {
     return  SliverPadding(
       padding: EdgeInsets.all(30.0),
@@ -70,11 +226,16 @@ class _StatsScreenState extends State<StatsScreen> {
             ),
 
           ],
+
         ),
+
       ),
+
     );
+
   }
 
+  /// Tabbar for country
   SliverToBoxAdapter _buildRegionTabBar() {
     return SliverToBoxAdapter(
       child: DefaultTabController(
@@ -99,22 +260,26 @@ class _StatsScreenState extends State<StatsScreen> {
             labelColor: Colors.green,
             unselectedLabelColor: Colors.white,
             tabs: const <Widget>[
-              Text('My Country'),
               Text('Global'),
+              Text('My Country'),
             ],
             onTap: (index) {
-             // print(index);
+                 /// TODO after get user locatoin :)
+                 /// display toast msg
+                 Fluttertoast.showToast(
+                   msg: index.toString(),
+                 );
             },
           ),
-
         ),
       ),
     );
   }
 
+  /// Tabbar for states
   SliverPadding _buildStatsTabBar() {
     return SliverPadding(
-      padding: const EdgeInsets.all(20.0),
+      padding:  EdgeInsets.all(20.0),
       sliver: SliverToBoxAdapter(
         child: DefaultTabController(
           length: 3,
@@ -124,14 +289,25 @@ class _StatsScreenState extends State<StatsScreen> {
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white60,
             tabs: const <Widget>[
+
               Text('Total'),
               Text('Today'),
               Text('Yesterday'),
             ],
-            onTap: (index) {},
+            onTap: (index) {
+              flag = index;
+              setState(() {});
+            },
           ),
         ),
       ),
     );
+
   }
 }
+
+
+
+
+
+

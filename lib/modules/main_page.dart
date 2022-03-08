@@ -41,7 +41,7 @@ class MainPage extends StatelessWidget{
         body: TabBarView(
           children: <Widget>[
             HomePage(),
-            StatsScreen(),
+            Tracker(),
             Container(),
             Container(),
           ],
