@@ -11,11 +11,18 @@ class Tcases
   var todayDeaths;
   var todayRecovered;
 
+  var casesPerOneMillion;
+  var deathsPerOneMillion;
+  var activePerOneMillion;
+  var recoveredPerOneMillion;
+  var criticalPerOneMillion;
+
   var flag;
 
   Tcases({
     this.todayCases, this.cases,this.deaths,this.recovered,this.updated,this.active,this.critical,
-    this.todayDeaths,this.todayRecovered,this.flag
+    this.todayDeaths,this.todayRecovered,this.flag,this.activePerOneMillion,this.casesPerOneMillion,
+    this.criticalPerOneMillion,this.deathsPerOneMillion,this.recoveredPerOneMillion
   });
 
 
@@ -34,6 +41,11 @@ class Tcases
       todayDeaths: json['todayDeaths'],
       todayRecovered: json['todayRecovered'],
       flag: json['flag'],
+      casesPerOneMillion: json['casesPerOneMillion'],
+        activePerOneMillion: json['activePerOneMillion'],
+        criticalPerOneMillion: json['criticalPerOneMillion'],
+        deathsPerOneMillion: json['deathsPerOneMillion'],
+        recoveredPerOneMillion: json['recoveredPerOneMillion']
 
     );
   }

@@ -1,13 +1,10 @@
 import 'dart:convert';
 
-import 'package:covid/models/country.dart';
 import 'package:covid/models/prevention.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoder/geocoder.dart';
 import 'package:geolocator/geolocator.dart';
-import '../models/Tcases.dart';
-import 'package:http/http.dart' as http;
 import 'package:connectivity/connectivity.dart';
 
 
@@ -37,7 +34,6 @@ class _HomePageState extends State<HomePage> {
   bool iswificonnected = false;
   bool isInternetOn = true;
 
-// Country con =  Country();
 
 late final List<String> li =  ['country-name'];
 
@@ -117,6 +113,16 @@ late final List<String> li =  ['country-name'];
   @override
   Widget build(BuildContext context) {
    return Scaffold(
+
+//       appBar: AppBar(
+//         backgroundColor: Color(0xff28b463),
+//         elevation: 0,
+//         leading: const Icon(Icons.menu,color: Colors.white,size: 30,),
+//         actions: const [
+//           Icon(Icons.notifications,color: Colors.white,size: 30,),
+//         ],
+//       ),
+
      body:  isInternetOn ? SingleChildScrollView(
        physics: const BouncingScrollPhysics(),
        child: Column(
@@ -136,8 +142,8 @@ late final List<String> li =  ['country-name'];
                    Row(
                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                      children: const <Widget>[
-                       Icon(Icons.menu,color: Colors.white,size: 30,),
-                       Icon(Icons.notifications,color: Colors.white,size: 30,),
+                        Icon(Icons.menu,color: Colors.white,size: 30,),
+                        Icon(Icons.notifications,color: Colors.white,size: 30,),
                      ],
 
                    ),
@@ -152,45 +158,6 @@ late final List<String> li =  ['country-name'];
                            borderRadius: BorderRadius.circular(30),
                          ),
                          padding: const EdgeInsets.only(left: 5,right: 16,top: 6,bottom: 6),
-                             /*
-                         child: DropdownButtonHideUnderline(
-                                 child: ButtonTheme(
-                                   alignedDropdown: true,
-                                   child: DropdownButton<String>(
-                                     isDense: true,
-                                     value: con.selected,
-                                     onChanged: (String? newValue) {
-                                       setState(() {
-                                         con.selected = newValue!;
-                                       });
-
-                                     },
-                                     items: con.myJson.map((Map map) {
-                                       return DropdownMenuItem<String>(
-                                         value: map["id"].toString(),
-                                         child: Row(
-                                           children: <Widget>[
-                                             ClipRRect(
-                                               borderRadius: BorderRadius.circular(30),
-                                               child: Image.asset(
-                                                 map["image"],
-                                                 width: 25,
-                                                 height: 25,
-                                               ),
-                                             ),
-
-                                             Container(
-                                                 margin: const EdgeInsets.only(left: 10),
-                                                 child: Text(map["name"], style: const TextStyle(fontSize: 17,fontWeight: FontWeight.w500),)),
-                                           ],
-                                         ),
-                                       );
-                                     }).toList(),
-                                   ),
-                                 ),
-                               ),
-                         */
-
                              child: Row(
                                children:  [
 
@@ -223,34 +190,37 @@ late final List<String> li =  ['country-name'];
              ),
            ),
            SizedBox(height: 20,),
-           Container(
-             margin: const EdgeInsets.only(left: 20,right: 20),
-             decoration: BoxDecoration(
-               borderRadius: BorderRadius.circular(8),
-               color: Color(0xff28b463),
-             ),
-             padding: EdgeInsets.all(16),
-             child: Row(
-               children: <Widget>[
-                 Image.asset("assets/images/patient.png",height: 80,width: 80,),
-                 const SizedBox(width: 24,),
-                 Expanded(
-                   child: Column(
-                     crossAxisAlignment: CrossAxisAlignment.start,
-                     children: const <Widget>[
-                       Text("Do your own test!",style: TextStyle(fontSize: 22,fontWeight: FontWeight.bold,color: Colors.white),),
-                       SizedBox(height: 10,),
-                       Text("Follow the instructions to do your own test.",style: TextStyle(fontSize: 16,height: 1.5,color: Colors.white),),
-                     ],
-                   ),
-                 ),
+           GestureDetector(
+             child: Container(
+               margin: const EdgeInsets.only(left: 20,right: 20),
+               decoration: BoxDecoration(
+                 borderRadius: BorderRadius.circular(8),
+                 color: Color(0xff28b463),
+               ),
+               padding: EdgeInsets.all(16),
+               child: Row(
+                 children: <Widget>[
+                   Image.asset("assets/images/patient.png",height: 80,width: 80,),
+                   const SizedBox(width: 24,),
+                   Expanded(
+                       child: Column(
+                         crossAxisAlignment: CrossAxisAlignment.start,
+                         children: const <Widget>[
+                           Text("Do your own test!",style: TextStyle(fontSize: 22,fontWeight: FontWeight.bold,color: Colors.white),),
+                           SizedBox(height: 10,),
+                           Text("Follow the instructions to do your own test.",style: TextStyle(fontSize: 16,height: 1.5,color: Colors.white),),
+                         ],
+                       ),
+                     ),
 
-               ],
+                 ],
+               ),
              ),
+
+             onTap: (){
+                openDialog();
+             },
            ),
-
-
-
 
            const SizedBox(height: 30,),
            const Padding(
@@ -342,6 +312,33 @@ late final List<String> li =  ['country-name'];
 
    );
 
+  }
+
+  Future openDialog() => showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Color(0xff28b463),
+          title: const Text(
+            'Record Your Cough Sound',
+            style: TextStyle(color: Colors.white),
+          ),
+        content: const Icon(
+             Icons.mic,
+          color: Colors.white,
+        ),
+        actions: [
+           TextButton(
+               onPressed: exit,
+               child: Text('EXIT',style: TextStyle(color:Colors.white),),
+
+           ),
+        ],
+      ),
+  );
+
+  // close the pop up
+  void exit(){
+    Navigator.of(context).pop();
   }
 
 }

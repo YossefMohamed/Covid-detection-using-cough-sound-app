@@ -9,6 +9,8 @@ import 'package:fluttertoast/fluttertoast.dart';
 import '../models/Tcases.dart';
 import 'package:http/http.dart' as http;
 import 'package:number_display/number_display.dart';
+import 'package:geocoder/geocoder.dart';
+import 'package:geolocator/geolocator.dart';
 
 class Tracker extends StatefulWidget {
   @override
@@ -18,7 +20,7 @@ class Tracker extends StatefulWidget {
 class _Tracker extends State<Tracker> {
 
   /// keep track of whatever user selection
-  int flag = 0;
+  int flag = 0 , isGlobal = 0;
 
   /// covid data
   dynamic covid;
@@ -33,17 +35,54 @@ class _Tracker extends State<Tracker> {
   /// global API data
   final String urlGlobal = "https://corona.lmao.ninja/v3/covid-19/all";
 
-  /// global API data
-   //final String url_country = "https://corona.lmao.ninja/v3/covid-19/countries/cuntry_name";
+  late final List<String> li =  ['country-name'];
+
+  /// Determine the current position of the device.
+  late Position position;
+
+  void _getCurrentLocation() async {
+    LocationPermission permission;
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        setState(() {
+          print("Permission Denied");
+        });
+      }else{
+        var position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+        final coordinates = Coordinates(position.latitude, position.longitude);
+        var addresses = await Geocoder.local.findAddressesFromCoordinates(coordinates);
+        var first = addresses.first;
+        //first.featureName+' '+
+        var country = first.addressLine.split(',').last; // country name
+        li.remove(li.last);
+        li.add(country);
+        setState(() {});
+      }
+    }else{
+      var position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      final coordinates = Coordinates(position.latitude, position.longitude);
+      var addresses = await Geocoder.local.findAddressesFromCoordinates(coordinates);
+      var first = addresses.first;
+      // first.featureName
+      var country = first.addressLine.split(',').last; // country name
+      li.remove(li.last);
+      li.add(country);
+      setState(() {});
+    }
+  }
 
   /// init connection
   @override
   void initState() {
     super.initState();
     this.getJsonData();
+    this.getJsonDataCountry();
+    _getCurrentLocation();
   }
 
-  /// Json Response
+  /// Json Response for GLOBAL
   Future <Tcases> getJsonData() async
   {
       var response = await http.get(
@@ -61,7 +100,26 @@ class _Tracker extends State<Tracker> {
     }
   }
 
+  /// Country API data
+  dynamic urlCountry = "https://corona.lmao.ninja/v3/covid-19/countries/";
 
+  /// Json Response for COUNTRY
+  Future <Tcases> getJsonDataCountry() async
+  {
+    var response = await http.get(
+      Uri.encodeFull(urlCountry+li.first.replaceAll(' ', '')),
+    );
+
+    if (response.statusCode==200)
+    {
+      final convertDataJson = jsonDecode(response.body);
+
+      return Tcases.fromJson(convertDataJson);
+    }
+    else{
+      throw Exception('Check Connection and Try to Reload Page!');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +149,7 @@ class _Tracker extends State<Tracker> {
                     /// fetch Api data and pass it to ui
                     FutureBuilder<Tcases>(
 
-                        future: getJsonData(),
+                        future: isGlobal == 0 ? getJsonData() : getJsonDataCountry(),
                         builder: (context, snapshot){
 
                           if(snapshot.hasData)
@@ -106,9 +164,9 @@ class _Tracker extends State<Tracker> {
                                                       child: Row(
                                                         children: <Widget>[
                                                           _buildStatCard('Total Cases', flag==1 ? display(covid?.todayCases)
-                                                              : (flag==2 ? display(covid?.todayCases) : display(covid?.cases)), Colors.orange),
+                                                              : (flag==2 ? display(covid?.casesPerOneMillion) : display(covid?.cases)), Colors.orange),
                                                           _buildStatCard('Deaths', flag==1 ? display(covid?.todayDeaths)
-                                                              : (flag==2 ? display(covid?.todayDeaths) : display(covid?.deaths)), Colors.red),
+                                                              : (flag==2 ? display(covid?.deathsPerOneMillion) : display(covid?.deaths)), Colors.red),
                                                         ],
                                                       ),
                                                     ),
@@ -120,9 +178,9 @@ class _Tracker extends State<Tracker> {
                                         child: Row(
                                           children: <Widget>[
                                             _buildStatCard('Recovered',  flag==1 ? display(covid?.todayRecovered)
-                                                : (flag==2 ? display(covid?.todayRecovered) : display(covid?.recovered)), Colors.pink),
-                                            _buildStatCard('Active', display(covid?.active), Colors.lightBlue),
-                                            _buildStatCard('Critical', display(covid?.critical), Colors.purple),
+                                                : (flag==2 ? display(covid?.recoveredPerOneMillion) : display(covid?.recovered)), Colors.pink),
+                                            _buildStatCard('Active', flag==2 ? display(covid?.activePerOneMillion) : display(covid?.active), Colors.lightBlue),
+                                            _buildStatCard('Critical', flag==2 ? display(covid?.criticalPerOneMillion) : display(covid?.critical), Colors.purple),
                                           ],
                                         ),
                                       ),
@@ -260,15 +318,16 @@ class _Tracker extends State<Tracker> {
             labelColor: Colors.green,
             unselectedLabelColor: Colors.white,
             tabs: const <Widget>[
-              Text('Global'),
+              Text('Global'), // index 0
               Text('My Country'),
             ],
             onTap: (index) {
+              isGlobal = index;
                  /// TODO after get user locatoin :)
                  /// display toast msg
-                 Fluttertoast.showToast(
-                   msg: index.toString(),
-                 );
+//                 Fluttertoast.showToast(
+//                   msg: li.first,
+//                 );
             },
           ),
         ),
@@ -289,10 +348,9 @@ class _Tracker extends State<Tracker> {
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white60,
             tabs: const <Widget>[
-
               Text('Total'),
               Text('Today'),
-              Text('Yesterday'),
+              Text('PerMilion'),
             ],
             onTap: (index) {
               flag = index;
