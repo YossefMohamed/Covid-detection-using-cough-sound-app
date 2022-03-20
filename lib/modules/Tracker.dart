@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:covid/config/palette.dart';
 import 'package:covid/config/styles.dart';
 import 'package:covid/modules/chart.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import '../models/Tcases.dart';
 import 'package:http/http.dart' as http;
 import 'package:number_display/number_display.dart';
@@ -86,7 +85,7 @@ class _Tracker extends State<Tracker> {
   Future <Tcases> getJsonData() async
   {
       var response = await http.get(
-      Uri.encodeFull(urlGlobal),
+        Uri.parse(urlGlobal)
     );
 
     if (response.statusCode==200)
@@ -107,7 +106,7 @@ class _Tracker extends State<Tracker> {
   Future <Tcases> getJsonDataCountry() async
   {
     var response = await http.get(
-      Uri.encodeFull(urlCountry+li.first.replaceAll(' ', '')),
+        Uri.parse(urlCountry+li.first.replaceAll(' ', '')),
     );
 
     if (response.statusCode==200)
@@ -261,19 +260,11 @@ class _Tracker extends State<Tracker> {
   /// header
   SliverPadding _buildHeader() {
     return  SliverPadding(
-      padding: EdgeInsets.all(30.0),
+      padding: EdgeInsets.all(10.0),
       sliver: SliverToBoxAdapter(
         child: Column(
-          children: [
-            const SizedBox(height: 20,),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const <Widget>[
-                Icon(Icons.menu,color: Colors.white,size: 30,),
-                Icon(Icons.notifications,color: Colors.white,size: 30,),
-              ],
-            ),
-            const Text(
+          children: const [
+            Text(
               'Statistics',
               style: TextStyle(
                 color: Colors.white,
@@ -323,11 +314,6 @@ class _Tracker extends State<Tracker> {
             ],
             onTap: (index) {
               isGlobal = index;
-                 /// TODO after get user locatoin :)
-                 /// display toast msg
-//                 Fluttertoast.showToast(
-//                   msg: li.first,
-//                 );
             },
           ),
         ),
@@ -362,6 +348,9 @@ class _Tracker extends State<Tracker> {
     );
 
   }
+
+
+
 }
 
 
